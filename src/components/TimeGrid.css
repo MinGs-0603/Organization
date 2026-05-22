@@ -73,7 +73,8 @@
   border-style: solid;
   border-radius: 0;
   z-index: 3;
-  pointer-events: none; /* Let mouse events pass through to slots underneath if needed, or set to auto if we want to click events later */
+  pointer-events: auto; /* Enable clicking on the event */
+  cursor: pointer;
   display: flex;
   align-items: center;
   overflow: hidden;

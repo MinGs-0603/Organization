@@ -50,6 +50,24 @@
   border-radius: 12px;
 }
 
+.btn-delete-icon {
+  background: none;
+  border: none;
+  color: #d9534f;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-delete-icon:hover {
+  background-color: rgba(217, 83, 79, 0.1);
+  transform: scale(1.05);
+}
+
 .event-input {
   width: 100%;
   border: none;

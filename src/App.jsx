@@ -29,6 +29,7 @@ function App() {
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalTimeRange, setModalTimeRange] = useState(null);
+  const [editingEvent, setEditingEvent] = useState(null);
 
   // Live clock
   useEffect(() => {
@@ -43,30 +44,50 @@ function App() {
   };
 
   const handleDragEnd = (range) => {
+    setEditingEvent(null);
     setModalTimeRange(range);
+    setIsModalOpen(true);
+  };
+
+  const handleEventClick = (ev) => {
+    setEditingEvent(ev);
+    setModalTimeRange({ start: ev.start, end: ev.end });
     setIsModalOpen(true);
   };
 
   const handleSaveEvent = (title, color) => {
     if (modalTimeRange) {
-      const dateString = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
-      const newEvent = {
-        id: Date.now().toString(),
-        date: dateString,
-        start: modalTimeRange.start,
-        end: modalTimeRange.end,
-        title,
-        color,
-      };
-      setEvents(prev => [...prev, newEvent]);
+      if (editingEvent) {
+        setEvents(prev => prev.map(e => e.id === editingEvent.id ? { ...e, title, color } : e));
+      } else {
+        const dateString = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
+        const newEvent = {
+          id: Date.now().toString(),
+          date: dateString,
+          start: modalTimeRange.start,
+          end: modalTimeRange.end,
+          title,
+          color,
+        };
+        setEvents(prev => [...prev, newEvent]);
+      }
     }
     setIsModalOpen(false);
     setModalTimeRange(null);
+    setEditingEvent(null);
+  };
+
+  const handleDeleteEvent = (eventId) => {
+    setEvents(prev => prev.filter(e => e.id !== eventId));
+    setIsModalOpen(false);
+    setModalTimeRange(null);
+    setEditingEvent(null);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setModalTimeRange(null);
+    setEditingEvent(null);
   };
 
   // Filter events for the currently selected date
@@ -87,14 +108,17 @@ function App() {
           currentTime={currentTime} 
           events={todaysEvents}
           onDragEnd={handleDragEnd}
+          onEventClick={handleEventClick}
         />
       </main>
 
       <EventModal 
         isOpen={isModalOpen}
         timeRange={modalTimeRange}
+        editingEvent={editingEvent}
         onClose={handleCloseModal}
         onSave={handleSaveEvent}
+        onDelete={handleDeleteEvent}
       />
     </div>
   );

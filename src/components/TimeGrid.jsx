@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './TimeGrid.css';
 
-const TimeGrid = ({ currentTime, events, onDragEnd }) => {
+const TimeGrid = ({ currentTime, events, onDragEnd, onEventClick }) => {
   const scrollRef = useRef(null);
 
   const [isDragging, setIsDragging] = useState(false);
@@ -144,6 +144,10 @@ const TimeGrid = ({ currentTime, events, onDragEnd }) => {
                     <div 
                       key={ev.id}
                       className="absolute-schedule-block"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEventClick(ev);
+                      }}
                       style={{
                         left: `${(startCol / slotsPerHour) * 100}%`,
                         width: `${(durationCols / slotsPerHour) * 100}%`,

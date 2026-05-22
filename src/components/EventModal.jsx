@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Trash2 } from 'lucide-react';
 import './EventModal.css';
 
 const COLORS = [
@@ -9,20 +10,42 @@ const COLORS = [
   { name: 'Muted Lavender', hex: '#D0B8CB' },
 ];
 
-const EventModal = ({ isOpen, onClose, onSave, timeRange }) => {
+const EventModal = ({ isOpen, onClose, onSave, onDelete, timeRange, editingEvent }) => {
   const [title, setTitle] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLORS[0].hex);
   const inputRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
-      setTitle('');
-      setSelectedColor(COLORS[0].hex);
+      if (editingEvent) {
+        setTitle(editingEvent.title);
+        setSelectedColor(editingEvent.color);
+      } else {
+        setTitle('');
+        setSelectedColor(COLORS[0].hex);
+      }
       setTimeout(() => {
         if (inputRef.current) inputRef.current.focus();
       }, 100);
     }
-  }, [isOpen]);
+  }, [isOpen, editingEvent]);
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!isOpen) return;
+      if (e.key === 'Escape') {
+        onClose();
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        // Only delete if we are in Edit Mode and NOT typing inside the input field
+        if (editingEvent && document.activeElement !== inputRef.current) {
+          onDelete(editingEvent.id);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, editingEvent, onClose, onDelete]);
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -42,10 +65,15 @@ const EventModal = ({ isOpen, onClose, onSave, timeRange }) => {
     <>
       <div className={`modal-backdrop ${isOpen ? 'open' : ''}`} onClick={onClose} />
       <div className={`event-modal ${isOpen ? 'open' : ''}`}>
-        <div className="modal-header">
+        <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="modal-time-range">
             {formatTimeFromMinutes(timeRange.start)} - {formatTimeFromMinutes(timeRange.end)}
           </div>
+          {editingEvent && (
+            <button type="button" className="btn-delete-icon" onClick={() => onDelete(editingEvent.id)} title="Delete Schedule">
+              <Trash2 size={16} />
+            </button>
+          )}
         </div>
         
         <form onSubmit={handleSave} className="modal-body">
@@ -77,7 +105,7 @@ const EventModal = ({ isOpen, onClose, onSave, timeRange }) => {
 
           <div className="modal-actions">
             <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn-save">Save</button>
+            <button type="submit" className="btn-save">{editingEvent ? 'Update' : 'Save'}</button>
           </div>
         </form>
       </div>
