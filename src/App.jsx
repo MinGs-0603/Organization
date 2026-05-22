@@ -55,7 +55,7 @@ function App() {
     setIsModalOpen(true);
   };
 
-  const handleSaveEvent = (title, color) => {
+  const handleSaveEvent = (title, color, categoryId, description) => {
     if (modalTimeRange) {
       if (editingEvent) {
         setEvents(prev => prev.map(e => e.id === editingEvent.id ? { ...e, title, color } : e));
