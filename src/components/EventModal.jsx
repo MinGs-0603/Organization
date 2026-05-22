@@ -12,17 +12,24 @@ const COLORS = [
 
 const EventModal = ({ isOpen, onClose, onSave, onDelete, timeRange, editingEvent }) => {
   const [title, setTitle] = useState('');
-  const [selectedColor, setSelectedColor] = useState(COLORS[0].hex);
+  const [description, setDescription] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
   const inputRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
       if (editingEvent) {
-        setTitle(editingEvent.title);
-        setSelectedColor(editingEvent.color);
+        setTitle(editingEvent.title || '');
+        setDescription(editingEvent.description || '');
+        // 기존 색상이나 카테고리 ID로 매칭
+        const cat = CATEGORIES.find(c => c.id === editingEvent.categoryId) 
+                 || CATEGORIES.find(c => c.hex === editingEvent.color) 
+                 || CATEGORIES[0];
+        setSelectedCategory(cat);
       } else {
         setTitle('');
-        setSelectedColor(COLORS[0].hex);
+        setDescription('');
+        setSelectedCategory(CATEGORIES[0]);
       }
       setTimeout(() => {
         if (inputRef.current) inputRef.current.focus();
@@ -30,15 +37,16 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, timeRange, editingEvent
     }
   }, [isOpen, editingEvent]);
 
-  // Global Keyboard Shortcuts
+  // 키보드 단축키 (Esc 닫기, Delete 삭제)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!isOpen) return;
       if (e.key === 'Escape') {
         onClose();
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        // Only delete if we are in Edit Mode and NOT typing inside the input field
-        if (editingEvent && document.activeElement !== inputRef.current) {
+        const activeTag = document.activeElement.tagName.toLowerCase();
+        // 입력창에 타이핑 중이 아닐 때만 삭제 작동
+        if (editingEvent && activeTag !== 'input' && activeTag !== 'textarea') {
           onDelete(editingEvent.id);
         }
       }
@@ -49,8 +57,9 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, timeRange, editingEvent
 
   const handleSave = (e) => {
     e.preventDefault();
-    const finalTitle = title.trim() ? title.trim() : 'Untitled Event';
-    onSave(finalTitle, selectedColor);
+    const finalTitle = title.trim() ? title.trim() : '새로운 일정';
+    // App.jsx로 4가지 데이터를 올려보냄
+    onSave(finalTitle, selectedCategory.hex, selectedCategory.id, description);
   };
 
   const formatTimeFromMinutes = (totalMinutes) => {
@@ -70,42 +79,53 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, timeRange, editingEvent
             {formatTimeFromMinutes(timeRange.start)} - {formatTimeFromMinutes(timeRange.end)}
           </div>
           {editingEvent && (
-            <button type="button" className="btn-delete-icon" onClick={() => onDelete(editingEvent.id)} title="Delete Schedule">
+            <button type="button" className="btn-delete-icon" onClick={() => onDelete(editingEvent.id)} title="일정 삭제">
               <Trash2 size={16} />
             </button>
           )}
         </div>
         
         <form onSubmit={handleSave} className="modal-body">
+          {/* 카테고리 선택 알약 버튼들 */}
+          <div className="category-picker">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                className={`category-pill ${selectedCategory.id === cat.id ? 'selected' : ''}`}
+                style={{ 
+                  backgroundColor: selectedCategory.id === cat.id ? cat.hex : '#F0F4F8',
+                  color: selectedCategory.id === cat.id ? '#FFFFFF' : '#333D4B',
+                  borderColor: selectedCategory.id === cat.id ? cat.hex : '#E5E8EB'
+                }}
+                onClick={() => setSelectedCategory(cat)}
+              >
+                {cat.emoji} {cat.name}
+              </button>
+            ))}
+          </div>
+
           <input 
             ref={inputRef}
             type="text" 
             className="event-input" 
-            placeholder="Event Title..." 
+            placeholder="일정 제목을 입력하세요..." 
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
-          
-          <div className="color-picker-container">
-            <label className="color-picker-label">Color</label>
-            <div className="color-palette">
-              {COLORS.map((color) => (
-                <button
-                  key={color.hex}
-                  type="button"
-                  className={`color-btn ${selectedColor === color.hex ? 'selected' : ''}`}
-                  style={{ backgroundColor: color.hex }}
-                  onClick={() => setSelectedColor(color.hex)}
-                  title={color.name}
-                  aria-label={`Select ${color.name}`}
-                />
-              ))}
-            </div>
-          </div>
+
+          {/* 상세 내용 텍스트 에어리어 */}
+          <textarea
+            className="event-textarea"
+            placeholder="상세 내용을 메모하세요 (선택)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+          />
 
           <div className="modal-actions">
-            <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn-save">{editingEvent ? 'Update' : 'Save'}</button>
+            <button type="button" className="btn-cancel" onClick={onClose}>취소</button>
+            <button type="submit" className="btn-save">{editingEvent ? '수정하기' : '저장하기'}</button>
           </div>
         </form>
       </div>
