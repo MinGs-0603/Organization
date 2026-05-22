@@ -1,157 +1,161 @@
+/* 그리드 컨테이너 & 미니멀 스크롤바 */
 .time-grid-container {
   flex: 1;
   overflow-y: auto;
-  position: relative;
-  -webkit-overflow-scrolling: touch;
-  padding: 40px 40px 80px 20px;
+  overflow-x: hidden;
+  padding: 40px 40px 100px 20px;
 }
 
+.time-grid-container::-webkit-scrollbar {
+  width: 6px;
+}
+.time-grid-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.time-grid-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+/* 그리드 본체 */
 .time-grid {
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .hour-row {
   display: flex;
-  height: 60px; /* Base height for an hour row */
-  border-bottom: 1px solid #EAE5D9;
+  min-height: 64px; /* 높이를 키워서 넉넉하고 견고하게 */
+  border-bottom: 1px solid var(--grid-line);
+  align-items: stretch;
 }
 
+/* 좌측 시간 라벨 */
 .time-label {
   width: 70px;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 16px;
   font-size: 13px;
   font-weight: 500;
   color: var(--text-muted);
-  user-select: none;
+  text-align: right;
+  padding-right: 16px;
+  transform: translateY(-8px); /* 선 중앙에 걸치도록 이동 */
 }
 
+/* 10분 단위 슬롯 컨테이너 */
 .slots-container {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  flex-grow: 1;
-  position: relative; /* CRITICAL: Enables absolute positioning of events */
+  flex: 1;
+  display: flex;
+  position: relative;
 }
 
-/* Underlying Grid Divider Slots */
 .time-slot {
-  /* Extremely subtle dashed line so it naturally shows through the translucent block */
-  border-left: 1px dashed rgba(200, 195, 185, 0.4);
-  cursor: col-resize;
-  position: relative;
-  user-select: none; /* Prevent text selection while dragging */
-  z-index: 1;
+  flex: 1;
+  border-right: 1px dashed rgba(0, 0, 0, 0.03); /* 아주 연한 점선 */
+  cursor: crosshair;
+  transition: background-color 0.2s ease;
 }
 
 .time-slot:hover {
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: rgba(49, 130, 246, 0.03); /* 마우스 올렸을 때 토스 블루 빛 */
 }
 
-/* Absolute Highlight Block (During Drag) */
-.absolute-highlight-block {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  background-color: rgba(242, 127, 112, 0.8); /* Soft coral 80% */
-  border: 1.5px solid var(--accent-coral);
-  border-radius: 0;
-  z-index: 2;
-  pointer-events: none; /* Let mouse events pass through to slots */
-}
-
-/* Absolute Schedule Block (Saved Event) */
+/* --- 렌더링된 일정 블록 (핵심 디자인) --- */
 .absolute-schedule-block {
   position: absolute;
-  top: 0;
-  height: 100%;
-  border-width: 1.5px;
-  border-style: solid;
-  border-radius: 0;
-  z-index: 3;
-  pointer-events: auto; /* Enable clicking/dragging on the event */
-  cursor: grab;
+  top: 2px;
+  height: calc(100% - 4px); /* 위아래 간격을 주어 타일처럼 예쁘게 안착 */
+  border-radius: var(--radius-md);
+  border: 1.5px solid;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4px 10px;
+  cursor: grab;
+  transition: var(--transition-smooth); /* 애플식 쫀득한 애니메이션 적용 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
   overflow: hidden;
-  transition: opacity 0.2s;
+  z-index: 2;
 }
 
-.absolute-schedule-block:active {
-  cursor: grabbing;
+.absolute-schedule-block:hover {
+  transform: scale(1.01) translateY(-1px); /* 마우스 오버 시 살짝 떠오르는 물리적 효과 */
+  box-shadow: var(--shadow-apple);
+  z-index: 5;
 }
 
 .absolute-schedule-block.dragging {
-  opacity: 0.3;
+  opacity: 0.5;
+  cursor: grabbing;
+  transform: scale(1.02);
 }
 
 .absolute-schedule-block.preview {
-  z-index: 4;
-  opacity: 0.8;
+  opacity: 0.6;
+  border-style: dashed;
   pointer-events: none;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 10;
 }
 
+.event-title-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 리사이즈 핸들 (우측 가장자리) */
 .resize-handle {
   position: absolute;
   right: 0;
   top: 0;
-  bottom: 0;
-  width: 14px;
+  width: 16px;
+  height: 100%;
   cursor: ew-resize;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--surface-white);
-  font-size: 14px;
-  font-weight: bold;
+  color: rgba(0,0,0,0.3);
   opacity: 0;
-  transition: opacity 0.2s;
-  z-index: 5;
-  background: rgba(0,0,0,0.1);
+  transition: var(--transition-smooth);
 }
 
 .absolute-schedule-block:hover .resize-handle {
   opacity: 1;
 }
 
-.resize-handle:hover {
-  background: rgba(0,0,0,0.2);
+/* 드래그 중 생기는 파란색 하이라이트 블록 */
+.absolute-highlight-block {
+  position: absolute;
+  top: 2px;
+  height: calc(100% - 4px);
+  background-color: rgba(49, 130, 246, 0.15); /* 투명한 토스 블루 */
+  border: 1.5px dashed var(--toss-blue);
+  border-radius: var(--radius-md);
+  pointer-events: none;
+  z-index: 1;
 }
 
-.event-title-text {
-  padding-left: 8px;
-  padding-right: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-charcoal);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  z-index: 4;
-}
-
-/* Current Time Indicator */
+/* 현재 시간 표시 선 (파란색 포인트) */
 .current-time-vertical-line {
   position: absolute;
   top: 0;
-  bottom: 0;
   width: 2px;
-  background-color: var(--accent-coral);
-  z-index: 10;
+  height: 100vh;
+  background-color: var(--toss-blue);
+  z-index: 20;
   pointer-events: none;
-  transform: translateX(-50%);
 }
 
 .current-time-dot-top {
   position: absolute;
   top: -4px;
-  left: -3px;
-  width: 8px;
-  height: 8px;
+  left: -4px;
+  width: 10px;
+  height: 10px;
+  background-color: var(--toss-blue);
   border-radius: 50%;
-  background-color: var(--accent-coral);
 }
