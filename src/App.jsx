@@ -1,150 +1,104 @@
 import React, { useState, useEffect } from 'react';
-import Sidebar from './components/Sidebar';
-import TimeGrid from './components/TimeGrid';
-import EventModal from './components/EventModal';
+import TimeGrid from './TimeGrid';
+import EventModal from './EventModal';
+import './index.css';
+
+export const CATEGORIES = [
+  { name: '자격증', emoji: '📜', color: '#6E8EB9', textColor: '#ffffff' },
+  { name: '회의', emoji: '🤝', color: '#8BB0C7', textColor: '#ffffff' },
+  { name: '휴식', emoji: '☕', color: '#E5E5EA', textColor: '#1D1D1F' },
+  { name: '운동', emoji: '🏃‍♂️', color: '#7FB5B5', textColor: '#ffffff' },
+  { name: '자소서', emoji: '✍️', color: '#5C728A', textColor: '#ffffff' },
+  { name: '면접', emoji: '💬', color: '#A1B1C8', textColor: '#ffffff' }
+];
 
 function App() {
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  
-  // Events state: lazy-load from localStorage
-  const [events, setEvents] = useState(() => {
-    const saved = localStorage.getItem('myDailyPlanner');
+  const [events, setEvents] = useState([]);
+  const [modalEvent, setModalEvent] = useState(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('planner_events');
     if (saved) {
       try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Failed to parse events", e);
-        return [];
-      }
+        setEvents(JSON.parse(saved));
+      } catch(e) {}
     }
-    return [];
-  });
-
-  // Persist to localStorage
-  useEffect(() => {
-    localStorage.setItem('myDailyPlanner', JSON.stringify(events));
-  }, [events]);
-  
-  // Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalTimeRange, setModalTimeRange] = useState(null);
-  const [editingEvent, setEditingEvent] = useState(null);
-
-  // Live clock
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
   }, []);
 
-  const handleDateSelect = (date) => {
-    setSelectedDate(date);
-  };
+  useEffect(() => {
+    localStorage.setItem('planner_events', JSON.stringify(events));
+  }, [events]);
 
-  const handleDragEnd = (range) => {
-    setEditingEvent(null);
-    setModalTimeRange(range);
-    setIsModalOpen(true);
-  };
-
-  const handleEventClick = (ev) => {
-    setEditingEvent(ev);
-    setModalTimeRange({ start: ev.start, end: ev.end });
-    setIsModalOpen(true);
-  };
-
-  const handleSaveEvent = (title, color) => {
-    if (modalTimeRange) {
-      if (editingEvent) {
-        setEvents(prev => prev.map(e => e.id === editingEvent.id ? { ...e, title, color } : e));
-      } else {
-        const dateString = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
-        const newEvent = {
-          id: Date.now().toString(),
-          date: dateString,
-          start: modalTimeRange.start,
-          end: modalTimeRange.end,
-          title,
-          color,
-        };
-        setEvents(prev => [...prev, newEvent]);
+  const handleSaveEvent = (newEvent) => {
+    setEvents(prev => {
+      const idx = prev.findIndex(e => e.id === newEvent.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = newEvent;
+        return next;
       }
-    }
-    setIsModalOpen(false);
-    setModalTimeRange(null);
-    setEditingEvent(null);
+      return [...prev, newEvent];
+    });
+    setModalEvent(null);
   };
 
-  const handleDeleteEvent = (eventId) => {
-    setEvents(prev => prev.filter(e => e.id !== eventId));
-    setIsModalOpen(false);
-    setModalTimeRange(null);
-    setEditingEvent(null);
+  const handleDeleteEvent = (id) => {
+    setEvents(prev => prev.filter(e => e.id !== id));
+    setModalEvent(null);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setModalTimeRange(null);
-    setEditingEvent(null);
-  };
-
-  const handleEventMove = (eventId, newStart, newEnd) => {
-    setEvents(prev => prev.map(ev => ev.id === eventId ? { ...ev, start: newStart, end: newEnd } : ev));
-  };
-
-  const handleEventResize = (eventId, newEnd) => {
-    setEvents(prev => prev.map(ev => ev.id === eventId ? { ...ev, end: newEnd } : ev));
-  };
-
-  const handleEventDuplicate = (eventId, newStart, newEnd) => {
-    const evToCopy = events.find(e => e.id === eventId);
-    if (evToCopy) {
-      const newEvent = {
-        ...evToCopy,
-        id: Date.now().toString(),
-        start: newStart,
-        end: newEnd
-      };
-      setEvents(prev => [...prev, newEvent]);
-    }
-  };
-
-  // Filter events for the currently selected date
-  const dateString = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
-  const todaysEvents = events.filter(e => e.date === dateString);
+  const today = new Date();
+  const dateString = today.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' });
 
   return (
     <div className="app-container">
-      <Sidebar 
-        currentTime={currentTime} 
-        selectedDate={selectedDate} 
-        onDateSelect={handleDateSelect}
-        events={events}
-      />
+      <aside className="sidebar">
+        <div className="clock-widget">
+          <Clock />
+          <p>{dateString}</p>
+        </div>
+        <div className="calendar-widget">
+          <h2>Daily Planner</h2>
+          <p style={{marginTop: '16px', fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.6'}}>
+            <strong>Drag empty slot</strong> to create<br/>
+            <strong>Drag block</strong> to move<br/>
+            <strong>Drag right edge</strong> to resize<br/>
+            <strong>Alt + Drag</strong> to duplicate
+          </p>
+        </div>
+      </aside>
       
-      <main className="main-area">
+      <main className="main-content">
         <TimeGrid 
-          currentTime={currentTime} 
-          events={todaysEvents}
-          onDragEnd={handleDragEnd}
-          onEventClick={handleEventClick}
-          onEventMove={handleEventMove}
-          onEventResize={handleEventResize}
-          onEventDuplicate={handleEventDuplicate}
+          events={events} 
+          setEvents={setEvents} 
+          onOpenModal={setModalEvent} 
         />
       </main>
 
-      <EventModal 
-        isOpen={isModalOpen}
-        timeRange={modalTimeRange}
-        editingEvent={editingEvent}
-        onClose={handleCloseModal}
-        onSave={handleSaveEvent}
-        onDelete={handleDeleteEvent}
-      />
+      {modalEvent && (
+        <EventModal
+          event={modalEvent}
+          onSave={handleSaveEvent}
+          onClose={() => setModalEvent(null)}
+          onDelete={handleDeleteEvent}
+        />
+      )}
     </div>
+  );
+}
+
+function Clock() {
+  const [time, setTime] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  
+  return (
+    <h1>
+      {time.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })}
+    </h1>
   );
 }
 

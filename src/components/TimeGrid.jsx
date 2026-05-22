@@ -1,233 +1,267 @@
-import React, { useState, useEffect, useRef } from 'react';
-import './TimeGrid.css';
+import React, { useState, useRef, useEffect } from 'react';
+import { CATEGORIES, HOURS_IN_DAY, SLOTS_PER_HOUR, SLOT_MINUTES } from '../utils/constants';
 
-const TimeGrid = ({ currentTime, events, onDragEnd, onEventClick, onEventMove, onEventResize, onEventDuplicate }) => {
-  const scrollRef = useRef(null);
-
-  const [dragAction, setDragAction] = useState(null); // 'CREATE', 'RESIZE', 'MOVE'
-  const [activeEvent, setActiveEvent] = useState(null);
+const TimeGrid = ({ date, blocks, setBlocks, onEditBlock, currentTime }) => {
+  const containerRef = useRef(null);
   
-  // For CREATE:
-  const [dragStartSlot, setDragStartSlot] = useState(null);
-  const [dragCurrentSlot, setDragCurrentSlot] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragType, setDragType] = useState(null); // 'create', 'move', 'resize'
+  const [dragState, setDragState] = useState(null); // stores intermediate drag info
 
-  // For MOVE/RESIZE preview:
-  const [previewEvent, setPreviewEvent] = useState(null);
+  // Generate grid hours and slots
+  const hours = Array.from({ length: HOURS_IN_DAY }, (_, i) => i);
+  const slots = Array.from({ length: SLOTS_PER_HOUR }, (_, i) => i * SLOT_MINUTES);
 
-  const hours = Array.from({ length: 24 }, (_, i) => i);
-  const slotsPerHour = 6;
-
-  const handleSlotMouseDown = (globalIndex, e) => {
-    if (e.button !== 0) return;
-    setDragAction('CREATE');
-    setDragStartSlot(globalIndex);
-    setDragCurrentSlot(globalIndex);
+  // Helper to calculate minutes from mouse position relative to container
+  const getMinutesFromEvent = (e) => {
+    if (!containerRef.current) return 0;
+    const rect = containerRef.current.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const x = e.clientX - rect.left - 60; // 60px is the hour label width
+    
+    if (x < 0) return 0;
+    
+    const rowHeight = 60; // var(--grid-row-height)
+    const hour = Math.floor(y / rowHeight);
+    
+    const gridWidth = rect.width - 60;
+    const slotWidth = gridWidth / SLOTS_PER_HOUR;
+    const slotIndex = Math.floor(x / slotWidth);
+    
+    let mins = hour * 60 + slotIndex * SLOT_MINUTES;
+    return Math.max(0, Math.min(mins, 24 * 60 - SLOT_MINUTES));
   };
 
-  const handleEventMouseDown = (ev, e) => {
-    if (e.button !== 0) return;
+  const handleMouseDown = (e, actionType, block = null) => {
+    if (e.button !== 0) return; // Only left click
     e.stopPropagation();
-    setDragAction('MOVE');
-    setActiveEvent(ev);
-    setPreviewEvent({ ...ev });
-  };
 
-  const handleResizeMouseDown = (ev, e) => {
-    if (e.button !== 0) return;
-    e.stopPropagation();
-    setDragAction('RESIZE');
-    setActiveEvent(ev);
-    setPreviewEvent({ ...ev });
-  };
+    const mins = getMinutesFromEvent(e);
 
-  const handleSlotMouseEnter = (globalIndex) => {
-    if (dragAction === 'CREATE') {
-      setDragCurrentSlot(globalIndex);
-    } else if (dragAction === 'MOVE' && activeEvent) {
-      const durationMin = activeEvent.end - activeEvent.start;
-      const newStartMin = globalIndex * 10;
-      setPreviewEvent({
-        ...activeEvent,
-        start: newStartMin,
-        end: newStartMin + durationMin
+    if (actionType === 'create') {
+      setIsDragging(true);
+      setDragType('create');
+      setDragState({ startMins: mins, currentMins: mins + SLOT_MINUTES });
+    } else if (actionType === 'move' || actionType === 'resize') {
+      setIsDragging(true);
+      setDragType(actionType);
+      
+      let newBlock = { ...block };
+      // Duplicate logic
+      if (actionType === 'move' && e.altKey) {
+        newBlock = { ...newBlock, id: Date.now().toString() };
+        // We temporarily add it to blocks so we can drag the copy
+        setBlocks(prev => [...prev, newBlock]);
+      }
+
+      setDragState({ 
+        block: newBlock, 
+        offsetMins: mins - newBlock.startMins,
+        startMins: mins
       });
-    } else if (dragAction === 'RESIZE' && activeEvent) {
-      const newEndMin = (globalIndex + 1) * 10;
-      if (newEndMin > activeEvent.start) {
-        setPreviewEvent({
-          ...activeEvent,
-          end: newEndMin
-        });
-      }
     }
   };
-
-  const handleMouseUp = (e) => {
-    if (dragAction === 'CREATE') {
-      if (dragStartSlot !== null && dragCurrentSlot !== null) {
-        const start = Math.min(dragStartSlot, dragCurrentSlot);
-        const end = Math.max(dragStartSlot, dragCurrentSlot) + 1;
-        onDragEnd({ start: start * 10, end: end * 10 });
-      }
-    } else if (dragAction === 'MOVE' && previewEvent && activeEvent) {
-      if (e.altKey) {
-        onEventDuplicate(activeEvent.id, previewEvent.start, previewEvent.end);
-      } else if (previewEvent.start !== activeEvent.start) {
-        onEventMove(activeEvent.id, previewEvent.start, previewEvent.end);
-      } else {
-        // If they didn't move it, treat as click
-        onEventClick(activeEvent);
-      }
-    } else if (dragAction === 'RESIZE' && previewEvent && activeEvent) {
-      if (previewEvent.end !== activeEvent.end) {
-        onEventResize(activeEvent.id, previewEvent.end);
-      }
-    }
-
-    setDragAction(null);
-    setActiveEvent(null);
-    setPreviewEvent(null);
-    setDragStartSlot(null);
-    setDragCurrentSlot(null);
-  };
-
-  const handleMouseLeaveGrid = (e) => {
-    if (dragAction) {
-      handleMouseUp(e);
-    }
-  };
-
-  // Current Time Line
-  const currentHours = currentTime.getHours();
-  const currentMinutes = currentTime.getMinutes();
-  const currentSeconds = currentTime.getSeconds();
-  const timeColumnPercentage = ((currentMinutes + currentSeconds / 60) / 60) * 100;
 
   useEffect(() => {
-    if (scrollRef.current) {
-      const offset = currentHours * 60 - 100; 
-      scrollRef.current.scrollTop = Math.max(0, offset);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!isDragging) return;
+
+    const handleMouseMove = (e) => {
+      const mins = getMinutesFromEvent(e);
+
+      if (dragType === 'create') {
+        setDragState(prev => ({ ...prev, currentMins: Math.max(prev.startMins + SLOT_MINUTES, mins + SLOT_MINUTES) }));
+      } else if (dragType === 'move') {
+        const duration = dragState.block.endMins - dragState.block.startMins;
+        let newStart = mins - dragState.offsetMins;
+        // Snap to slot
+        newStart = Math.round(newStart / SLOT_MINUTES) * SLOT_MINUTES;
+        newStart = Math.max(0, Math.min(newStart, 24 * 60 - duration));
+        
+        setBlocks(prev => prev.map(b => b.id === dragState.block.id ? { ...b, startMins: newStart, endMins: newStart + duration } : b));
+      } else if (dragType === 'resize') {
+        let newEnd = mins + SLOT_MINUTES;
+        newEnd = Math.round(newEnd / SLOT_MINUTES) * SLOT_MINUTES;
+        newEnd = Math.max(dragState.block.startMins + SLOT_MINUTES, newEnd);
+        
+        setBlocks(prev => prev.map(b => b.id === dragState.block.id ? { ...b, endMins: newEnd } : b));
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (dragType === 'create') {
+        // Only open modal if we dragged at least one slot
+        if (dragState.currentMins > dragState.startMins) {
+          onEditBlock({
+            startMins: dragState.startMins,
+            endMins: dragState.currentMins,
+            categoryId: CATEGORIES[0].id,
+            date
+          });
+        }
+      }
+      setIsDragging(false);
+      setDragType(null);
+      setDragState(null);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragType, dragState, setBlocks, onEditBlock, date]);
 
   return (
-    <div className="time-grid-container" ref={scrollRef}>
+    <div 
+      style={{ 
+        flex: 1, 
+        overflowY: 'auto', 
+        padding: '24px', 
+        backgroundColor: 'transparent',
+        position: 'relative'
+      }}
+    >
       <div 
-        className="time-grid" 
-        onMouseLeave={handleMouseLeaveGrid}
-        onMouseUp={handleMouseUp}
+        ref={containerRef}
+        style={{ 
+          position: 'relative', 
+          border: '1px solid var(--grid-line)', 
+          borderRadius: 'var(--radius-lg)',
+          backgroundColor: 'var(--sidebar-bg)',
+          boxShadow: 'var(--shadow-apple)',
+          userSelect: 'none',
+          overflow: 'hidden'
+        }}
+        onMouseDown={(e) => handleMouseDown(e, 'create')}
       >
-        {hours.map((hour) => {
-          const isCurrentHourRow = hour === currentHours;
-          const hourStartSlot = hour * slotsPerHour;
-          const hourEndSlot = hourStartSlot + slotsPerHour;
+        {/* Grid Background */}
+        {hours.map(hour => (
+          <div key={hour} style={{ display: 'flex', height: 'var(--grid-row-height)', borderBottom: '1px solid var(--grid-line)' }}>
+            <div style={{ width: '60px', borderRight: '1px solid var(--grid-line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
+              {`${hour.toString().padStart(2, '0')}:00`}
+            </div>
+            <div style={{ flex: 1, display: 'flex' }}>
+              {slots.map((slot, idx) => (
+                <div key={idx} style={{ flex: 1, borderRight: idx < slots.length - 1 ? '1px dashed var(--grid-line)' : 'none' }}></div>
+              ))}
+            </div>
+          </div>
+        ))}
 
-          // Drag Highlight
-          let highlightStartCol = null;
-          let highlightDuration = 0;
+        {/* Temporary Creation Block */}
+        {dragType === 'create' && dragState && (
+          <div style={{
+            position: 'absolute',
+            top: `${Math.floor(dragState.startMins / 60) * 60}px`,
+            left: `calc(60px + ((100% - 60px) / 60) * ${dragState.startMins % 60})`,
+            width: `calc(((100% - 60px) / 60) * ${dragState.currentMins - dragState.startMins})`,
+            height: '60px', // simplified for now, assuming horizontal only
+            backgroundColor: `${CATEGORIES[0].color}D9`,
+            border: `1.5px solid ${CATEGORIES[0].color}`,
+            borderRadius: 'var(--radius-md)',
+            pointerEvents: 'none',
+            zIndex: 10
+          }}></div>
+        )}
+
+        {/* Render Blocks */}
+        {blocks.filter(b => b.date === date).map(block => {
+          const category = CATEGORIES.find(c => c.id === block.categoryId) || CATEGORIES[0];
           
-          if (dragAction === 'CREATE' && dragStartSlot !== null && dragCurrentSlot !== null) {
-            const dragMin = Math.min(dragStartSlot, dragCurrentSlot);
-            const dragMax = Math.max(dragStartSlot, dragCurrentSlot) + 1;
-            
-            if (dragMin < hourEndSlot && dragMax > hourStartSlot) {
-              const overlapStart = Math.max(dragMin, hourStartSlot);
-              const overlapEnd = Math.min(dragMax, hourEndSlot);
-              highlightStartCol = overlapStart - hourStartSlot;
-              highlightDuration = overlapEnd - overlapStart;
-            }
-          }
-
-          const renderBlock = (ev, isPreview = false) => {
-            const evStartSlot = ev.start / 10;
-            const evEndSlot = ev.end / 10;
-            
-            if (evStartSlot >= hourEndSlot || evEndSlot <= hourStartSlot) return null;
-
-            const overlapStart = Math.max(evStartSlot, hourStartSlot);
-            const overlapEnd = Math.min(evEndSlot, hourEndSlot);
-            
-            const startCol = overlapStart - hourStartSlot;
-            const durationCols = overlapEnd - overlapStart;
-            const isEventStartInThisRow = evStartSlot >= hourStartSlot && evStartSlot < hourEndSlot;
-            const isEventEndInThisRow = evEndSlot > hourStartSlot && evEndSlot <= hourEndSlot;
-
-            const isBeingMovedOrResized = !isPreview && activeEvent && activeEvent.id === ev.id;
-
-            return (
-              <div 
-                key={isPreview ? `preview-${ev.id}` : ev.id}
-                className={`absolute-schedule-block ${isPreview ? 'preview' : ''} ${isBeingMovedOrResized ? 'dragging' : ''}`}
-                onMouseDown={(e) => !isPreview && handleEventMouseDown(ev, e)}
-                style={{
-                  left: `${(startCol / slotsPerHour) * 100}%`,
-                  width: `${(durationCols / slotsPerHour) * 100}%`,
-                  backgroundColor: `${ev.color}CC`,
-                  borderColor: ev.color,
-                }}
-              >
-                {isEventStartInThisRow && (
-                  <div className="event-title-text">{ev.title}</div>
-                )}
-                {!isPreview && isEventEndInThisRow && (
-                  <div 
-                    className="resize-handle"
-                    onMouseDown={(e) => handleResizeMouseDown(ev, e)}
-                  >
-                    &#8942;
-                  </div>
-                )}
-              </div>
-            );
-          };
+          const startHour = Math.floor(block.startMins / 60);
+          const startMin = block.startMins % 60;
+          const durationMins = block.endMins - block.startMins;
 
           return (
-            <div key={hour} className="hour-row">
-              <div className="time-label">
-                {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+            <div
+              key={block.id}
+              className="block-container"
+              style={{
+                position: 'absolute',
+                top: `${startHour * 60}px`,
+                left: `calc(60px + ((100% - 60px) / 60) * ${startMin})`,
+                width: `calc(((100% - 60px) / 60) * ${durationMins})`,
+                height: '60px',
+                backgroundColor: `${category.color}D9`,
+                border: `1.5px solid ${category.color}`,
+                borderRadius: 'var(--radius-md)',
+                boxShadow: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0 8px',
+                cursor: 'grab',
+                zIndex: dragType === 'move' && dragState?.block.id === block.id ? 20 : 5,
+                opacity: dragType === 'move' && dragState?.block.id === block.id ? 0.8 : 1,
+                transition: isDragging ? 'none' : 'var(--transition-smooth)'
+              }}
+              onMouseDown={(e) => handleMouseDown(e, 'move', block)}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isDragging) onEditBlock(block);
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden', width: '100%' }}>
+                <span style={{ fontSize: '16px' }}>{category.emoji}</span>
+                <span style={{ color: 'var(--text-main)', fontWeight: '500', fontSize: '13px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                  {block.title}
+                </span>
               </div>
-              <div className="slots-container">
-                {Array.from({ length: slotsPerHour }).map((_, slotIndex) => {
-                  const globalSlotIndex = hour * slotsPerHour + slotIndex;
-                  return (
-                    <div 
-                      key={globalSlotIndex} 
-                      className="time-slot"
-                      onMouseDown={(e) => handleSlotMouseDown(globalSlotIndex, e)}
-                      onMouseEnter={() => handleSlotMouseEnter(globalSlotIndex)}
-                    ></div>
-                  );
-                })}
+              
+              {/* Resize Handle */}
+              <div
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: '8px',
+                  cursor: 'col-resize',
+                  backgroundColor: 'rgba(0,0,0,0.1)',
+                  borderTopRightRadius: '6px',
+                  borderBottomRightRadius: '6px'
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  handleMouseDown(e, 'resize', block);
+                }}
+              />
 
-                {highlightStartCol !== null && highlightDuration > 0 && (
-                  <div 
-                    className="absolute-highlight-block"
-                    style={{
-                      left: `${(highlightStartCol / slotsPerHour) * 100}%`,
-                      width: `${(highlightDuration / slotsPerHour) * 100}%`
-                    }}
-                  ></div>
-                )}
-
-                {/* Render normal events */}
-                {events.map(ev => renderBlock(ev))}
-
-                {/* Render preview event on top if moving/resizing */}
-                {dragAction !== 'CREATE' && previewEvent && renderBlock(previewEvent, true)}
-
-                {isCurrentHourRow && (
-                  <div 
-                    className="current-time-vertical-line" 
-                    style={{ left: `${timeColumnPercentage}%` }}
-                  >
-                    <div className="current-time-dot-top"></div>
-                  </div>
-                )}
-              </div>
+              {block.description && (
+                <div className="tooltip">
+                  {block.description}
+                </div>
+              )}
             </div>
           );
         })}
+
+        {/* Current Time Indicator */}
+        {currentTime && date === new Date().toISOString().split('T')[0] && (
+          <div style={{ pointerEvents: 'none', zIndex: 30 }}>
+            {/* The Dot */}
+            <div style={{
+              position: 'absolute',
+              top: `${currentTime.getHours() * 60 + currentTime.getMinutes() - 4}px`,
+              left: '56px',
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--toss-blue)',
+            }}></div>
+            {/* The Line */}
+            <div style={{
+              position: 'absolute',
+              top: `${currentTime.getHours() * 60 + currentTime.getMinutes()}px`,
+              left: '60px',
+              width: 'calc(100% - 60px)',
+              height: '2px',
+              backgroundColor: 'var(--toss-blue)',
+              opacity: 0.8
+            }}></div>
+          </div>
+        )}
+
       </div>
     </div>
   );

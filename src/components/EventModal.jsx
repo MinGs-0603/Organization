@@ -3,11 +3,11 @@ import { Trash2 } from 'lucide-react';
 import './EventModal.css';
 
 const COLORS = [
-  { name: 'Soft Coral', hex: '#F27F70' },
-  { name: 'Muted Sage', hex: '#A2C2A6' },
-  { name: 'Soft Butter', hex: '#F0D689' },
-  { name: 'Dusty Blue', hex: '#88A0C0' },
-  { name: 'Muted Lavender', hex: '#D0B8CB' },
+  { name: 'Soft Teal', hex: '#A3D9D2' },
+  { name: 'Sky Blue', hex: '#9ED9F7' },
+  { name: 'Sapphire', hex: '#A2B5E2' },
+  { name: 'Slate Blue', hex: '#9FAEC3' },
+  { name: 'Lavender Blue', hex: '#B8C5EA' },
 ];
 
 const EventModal = ({ isOpen, onClose, onSave, onDelete, timeRange, editingEvent }) => {

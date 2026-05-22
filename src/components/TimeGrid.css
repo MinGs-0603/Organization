@@ -39,11 +39,11 @@
 
 /* Underlying Grid Divider Slots */
 .time-slot {
-  /* Extremely subtle dashed line so it naturally shows through the translucent block */
-  border-left: 1px dashed rgba(200, 195, 185, 0.4);
+  /* Subtle dashed line showing through */
+  border-left: 1px dashed rgba(217, 226, 236, 0.7); /* Cool grey-blue match */
   cursor: col-resize;
   position: relative;
-  user-select: none; /* Prevent text selection while dragging */
+  user-select: none;
   z-index: 1;
 }
 
@@ -56,11 +56,20 @@
   position: absolute;
   top: 0;
   height: 100%;
-  background-color: rgba(242, 127, 112, 0.8); /* Soft coral 80% */
+  background-color: rgba(43, 179, 225, 0.3); /* Sky blue transparent */
   border: 1.5px solid var(--accent-coral);
   border-radius: 0;
   z-index: 2;
-  pointer-events: none; /* Let mouse events pass through to slots */
+  pointer-events: none;
+}
+
+/* 
+  CRITICAL FIX: When the grid is in any drag action, 
+  disable pointer events on existing schedule blocks 
+  so the underlying grid slots can receive mouse events!
+*/
+.time-grid.is-dragging .absolute-schedule-block {
+  pointer-events: none !important;
 }
 
 /* Absolute Schedule Block (Saved Event) */
