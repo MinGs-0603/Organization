@@ -90,6 +90,27 @@ function App() {
     setEditingEvent(null);
   };
 
+  const handleEventMove = (eventId, newStart, newEnd) => {
+    setEvents(prev => prev.map(ev => ev.id === eventId ? { ...ev, start: newStart, end: newEnd } : ev));
+  };
+
+  const handleEventResize = (eventId, newEnd) => {
+    setEvents(prev => prev.map(ev => ev.id === eventId ? { ...ev, end: newEnd } : ev));
+  };
+
+  const handleEventDuplicate = (eventId, newStart, newEnd) => {
+    const evToCopy = events.find(e => e.id === eventId);
+    if (evToCopy) {
+      const newEvent = {
+        ...evToCopy,
+        id: Date.now().toString(),
+        start: newStart,
+        end: newEnd
+      };
+      setEvents(prev => [...prev, newEvent]);
+    }
+  };
+
   // Filter events for the currently selected date
   const dateString = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
   const todaysEvents = events.filter(e => e.date === dateString);
@@ -109,6 +130,9 @@ function App() {
           events={todaysEvents}
           onDragEnd={handleDragEnd}
           onEventClick={handleEventClick}
+          onEventMove={handleEventMove}
+          onEventResize={handleEventResize}
+          onEventDuplicate={handleEventDuplicate}
         />
       </main>
 

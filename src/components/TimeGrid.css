@@ -68,16 +68,58 @@
   position: absolute;
   top: 0;
   height: 100%;
-  /* border-color and background-color are set dynamically via inline styles */
   border-width: 1.5px;
   border-style: solid;
   border-radius: 0;
   z-index: 3;
-  pointer-events: auto; /* Enable clicking on the event */
-  cursor: pointer;
+  pointer-events: auto; /* Enable clicking/dragging on the event */
+  cursor: grab;
   display: flex;
   align-items: center;
   overflow: hidden;
+  transition: opacity 0.2s;
+}
+
+.absolute-schedule-block:active {
+  cursor: grabbing;
+}
+
+.absolute-schedule-block.dragging {
+  opacity: 0.3;
+}
+
+.absolute-schedule-block.preview {
+  z-index: 4;
+  opacity: 0.8;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 14px;
+  cursor: ew-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--surface-white);
+  font-size: 14px;
+  font-weight: bold;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 5;
+  background: rgba(0,0,0,0.1);
+}
+
+.absolute-schedule-block:hover .resize-handle {
+  opacity: 1;
+}
+
+.resize-handle:hover {
+  background: rgba(0,0,0,0.2);
 }
 
 .event-title-text {
