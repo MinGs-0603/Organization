@@ -17,6 +17,9 @@ const TimeGrid = ({ currentTime, events, onDragEnd, onEventClick, onEventMove, o
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const slotsPerHour = 6;
 
+  // 카테고리별 이모지 매핑 (추가된 부분)
+  const emojiMap = { cert: '📜', meeting: '🤝', break: '☕', workout: '🏃‍♂️', resume: '✍️', interview: '💬' };
+
   const handleSlotMouseDown = (globalIndex, e) => {
     if (e.button !== 0) return;
     setDragAction('CREATE');
@@ -166,9 +169,14 @@ const TimeGrid = ({ currentTime, events, onDragEnd, onEventClick, onEventMove, o
                   backgroundColor: `${ev.color}CC`,
                   borderColor: ev.color,
                 }}
+                // 마우스 오버 시 상세 내용 툴팁 띄우기 (추가된 부분)
+                title={ev.description ? `${ev.title}\n\n${ev.description}` : ev.title}
               >
                 {isEventStartInThisRow && (
-                  <div className="event-title-text">{ev.title}</div>
+                  <div className="event-title-text">
+                    {/* 카테고리 이모지 및 제목 렌더링 (추가된 부분) */}
+                    {emojiMap[ev.categoryId] || ''} {ev.title}
+                  </div>
                 )}
                 {!isPreview && isEventEndInThisRow && (
                   <div 
