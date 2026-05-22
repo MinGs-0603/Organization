@@ -1,0 +1,125 @@
+.sidebar-header {
+  margin-bottom: 48px;
+}
+
+.sidebar-date {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-charcoal);
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+
+.sidebar-clock {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+
+.sidebar-calendar {
+  margin-top: auto; /* push to center or top depending on design */
+  margin-bottom: auto;
+  width: 100%;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.month-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-charcoal);
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--text-charcoal);
+  transition: var(--transition-smooth);
+}
+
+.nav-btn:hover {
+  background-color: var(--border-light);
+}
+
+.calendar-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.days-of-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 12px;
+}
+
+.day-name {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  row-gap: 12px;
+}
+
+.calendar-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.day-number {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-charcoal);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: var(--transition-smooth);
+}
+
+.calendar-cell:hover:not(.selected) .day-number {
+  background-color: var(--border-light);
+}
+
+.calendar-cell.today .day-number {
+  color: var(--accent-coral);
+  font-weight: 700;
+}
+
+.calendar-cell.selected .day-number {
+  background-color: var(--text-charcoal);
+  color: var(--surface-white);
+  font-weight: 600;
+}
+
+.event-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--accent-coral);
+  position: absolute;
+  bottom: 0px;
+}

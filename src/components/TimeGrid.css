@@ -1,0 +1,114 @@
+.time-grid-container {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+  padding: 40px 40px 80px 20px;
+}
+
+.time-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.hour-row {
+  display: flex;
+  height: 60px; /* Base height for an hour row */
+  border-bottom: 1px solid #EAE5D9;
+}
+
+.time-label {
+  width: 70px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.slots-container {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  flex-grow: 1;
+  position: relative; /* CRITICAL: Enables absolute positioning of events */
+}
+
+/* Underlying Grid Divider Slots */
+.time-slot {
+  /* Extremely subtle dashed line so it naturally shows through the translucent block */
+  border-left: 1px dashed rgba(200, 195, 185, 0.4);
+  cursor: col-resize;
+  position: relative;
+  user-select: none; /* Prevent text selection while dragging */
+  z-index: 1;
+}
+
+.time-slot:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Absolute Highlight Block (During Drag) */
+.absolute-highlight-block {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background-color: rgba(242, 127, 112, 0.8); /* Soft coral 80% */
+  border: 1.5px solid var(--accent-coral);
+  border-radius: 0;
+  z-index: 2;
+  pointer-events: none; /* Let mouse events pass through to slots */
+}
+
+/* Absolute Schedule Block (Saved Event) */
+.absolute-schedule-block {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  /* border-color and background-color are set dynamically via inline styles */
+  border-width: 1.5px;
+  border-style: solid;
+  border-radius: 0;
+  z-index: 3;
+  pointer-events: none; /* Let mouse events pass through to slots underneath if needed, or set to auto if we want to click events later */
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.event-title-text {
+  padding-left: 8px;
+  padding-right: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-charcoal);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  z-index: 4;
+}
+
+/* Current Time Indicator */
+.current-time-vertical-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--accent-coral);
+  z-index: 10;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.current-time-dot-top {
+  position: absolute;
+  top: -4px;
+  left: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent-coral);
+}

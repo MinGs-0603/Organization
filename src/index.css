@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg-cream: #FDFBF7;
+  --text-charcoal: #212121;
+  --text-muted: #8E8E8E;
+  --accent-coral: #F28C8C;
+  --border-light: #EBE8E0;
+  --surface-white: #FFFFFF;
+  --transition-smooth: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-cream);
+  color: var(--text-charcoal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden; /* We'll handle scroll in the grid component to keep header sticky */
+}
+
+/* Custom Scrollbar for minimalistic look */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--bg-cream);
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 30%;
+  min-width: 320px;
+  max-width: 420px;
+  border-right: 1px solid var(--border-light);
+  background-color: var(--surface-white);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.02);
+  padding: 32px;
+}
+
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: var(--bg-cream);
+  overflow: hidden;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  outline: none;
+}
